@@ -1,0 +1,35 @@
+WITH DistinctSubscribers AS (
+SELECT
+user_pseudo_id, 
+MIN(DATE_TRUNC(subscription_start, WEEK)) AS subscription_start,
+MAX(DATE_TRUNC(subscription_end, WEEK)) AS subscription_end
+FROM `tc-da-1.turing_data_analytics.subscriptions`
+GROUP BY 1
+),
+
+Subscribers AS (
+SELECT 
+CONCAT((DATE_TRUNC(DistinctSubscribers.subscription_start, WEEK))," - ",LAST_DAY(DistinctSubscribers.subscription_start, WEEK)) Cohort,
+COUNT(DistinctSubscribers.user_pseudo_id) AS Cohort_size,
+SUM(CASE WHEN          DistinctSubscribers.subscription_start                 <>DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS zero_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 1 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS first_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 2 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS second_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 3 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS third_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 4 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS fourth_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 5 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS fift_week,
+SUM(CASE WHEN DATE_ADD(DistinctSubscribers.subscription_start, INTERVAL 6 WEEK)<DistinctSubscribers.subscription_end OR subscription_end IS NULL THEN 1 ELSE 0 END) AS sixth_week
+FROM  DistinctSubscribers AS DistinctSubscribers
+GROUP BY 1
+)
+
+SELECT
+Cohort,
+Cohort_size,
+ROUND(zero_week/Cohort_size * 100, 2) AS week_0_retention_rate,
+ROUND(first_week/Cohort_size * 100, 2) AS week_1_retention_rate,
+ROUND(second_week/Cohort_size * 100, 2) AS week_2_retention_rate,
+ROUND(third_week/Cohort_size * 100, 2) AS week_3_retention_rate,
+ROUND(fourth_week/Cohort_size * 100, 2) AS week_4_retention_rate,
+ROUND(fift_week/Cohort_size * 100, 2) AS week_5_retention_rate,
+ROUND(sixth_week/Cohort_size * 100, 2) AS week_6_retention_rate
+FROM Subscribers
